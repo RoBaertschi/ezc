@@ -8,10 +8,10 @@ pub fn main() !void {
         .mode = .read_only,
     });
     var lexer = try ezc.Lexer.create(file, allocator);
-    var token = try lexer.next_token();
+    var token = try lexer.nextToken();
     while (token.data != .eof) {
         std.debug.print("{any}\n", .{token});
-        token = try lexer.next_token();
+        token = try lexer.nextToken();
     }
 }
 

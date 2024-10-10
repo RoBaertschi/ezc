@@ -92,31 +92,31 @@ const Token = struct {
     }
 };
 
-inline fn is_digit(ch: u8) bool {
+inline fn isDigit(ch: u8) bool {
     return '0' <= ch and ch <= '9';
 }
 
-inline fn is_hex(ch: u8) bool {
-    return is_digit(ch) or ('a' <= ch and ch <= 'f') or ('A' <= ch and ch <= 'F');
+inline fn isHex(ch: u8) bool {
+    return isDigit(ch) or ('a' <= ch and ch <= 'f') or ('A' <= ch and ch <= 'F');
 }
 
-inline fn is_octal(ch: u8) bool {
+inline fn isOctal(ch: u8) bool {
     return '0' <= ch and ch <= '7';
 }
 
-inline fn is_dot(ch: u8) bool {
+inline fn isDot(ch: u8) bool {
     return ch == '.';
 }
 
-inline fn is_variable_name(ch: u8) bool {
-    return ('a' <= ch and ch <= 'z') or ('A' <= ch and ch <= 'Z') or ch == '_' or is_digit(ch);
+inline fn isVariableName(ch: u8) bool {
+    return ('a' <= ch and ch <= 'z') or ('A' <= ch and ch <= 'Z') or ch == '_' or isDigit(ch);
 }
 
-inline fn is_first_variable_name_char(ch: u8) bool {
+inline fn isFirstVariableNameChar(ch: u8) bool {
     return ('a' <= ch and ch <= 'z') or ('A' <= ch and ch <= 'Z') or ch == '_';
 }
 
-inline fn is_whitespace(ch: u8) bool {
+inline fn isWhitespace(ch: u8) bool {
     return ch == '\n' or ch == '\t' or ch == '\r' or ch == ' ';
 }
 
@@ -156,7 +156,7 @@ pub fn create(file: std.fs.File, allocator: Alloc) (Alloc.Error || std.fs.File.R
     return self;
 }
 
-fn read_char(self: *Self) void {
+fn readChar(self: *Self) void {
     if (self.peek_pos >= self.string.len) {
         self.ch = 0;
     } else {
@@ -172,7 +172,7 @@ fn read_char(self: *Self) void {
     self.peek_pos += 1;
 }
 
-fn read_number(self: *Self) Error!Token {
+fn readNumber(self: *Self) Error!Token {
     const start_loc = self.cur_loc;
     const start_pos = self.cur_pos;
     var dot_type: enum { normal, begin, end } = .normal;
@@ -180,14 +180,14 @@ fn read_number(self: *Self) Error!Token {
     if (self.ch == '.') {
         dot_type = .begin;
     }
-    while (is_digit(self.ch)) self.read_char();
+    while (isDigit(self.ch)) self.readChar();
 
     if (self.ch == '.') {
-        self.read_char();
-        if (!is_digit(self.ch)) {
+        self.readChar();
+        if (!isDigit(self.ch)) {
             dot_type = .end;
         }
-        while (is_digit(self.ch)) self.read_char();
+        while (isDigit(self.ch)) self.readChar();
 
         const value = switch (dot_type) {
             .normal => try std.fmt.parseFloat(f64, self.string[start_pos..self.cur_pos]),
@@ -210,46 +210,46 @@ fn read_number(self: *Self) Error!Token {
     return Token{ .data = .{ .integer = value }, .start_loc = start_loc, .end_loc = self.cur_loc };
 }
 
-pub fn read_octal(self: *Self) Error!Token {
+pub fn readOctal(self: *Self) Error!Token {
     const start_loc = self.cur_loc;
     const start_pos = self.cur_pos;
-    self.read_char();
-    self.read_char();
+    self.readChar();
+    self.readChar();
 
-    if (!is_octal(self.ch)) {
+    if (!isOctal(self.ch)) {
         return Token{ .data = .{ .invalid = self.ch }, .start_loc = start_loc, .end_loc = self.cur_loc };
     }
-    while (is_octal(self.ch)) self.read_char();
+    while (isOctal(self.ch)) self.readChar();
     const value = try std.fmt.parseInt(i64, self.string[start_pos..self.cur_pos], 0);
     return Token{ .data = .{ .integer = value }, .start_loc = start_loc, .end_loc = self.cur_loc };
 }
 
-pub fn read_hex(self: *Self) Error!Token {
+pub fn readHex(self: *Self) Error!Token {
     const start_loc = self.cur_loc;
     const start_pos = self.cur_pos;
     // currently: 0xFFF
     //            ^
-    self.read_char();
+    self.readChar();
     // currently: 0xFFF
     //             ^
-    self.read_char();
+    self.readChar();
     // currently: 0xFFF
     //              ^
 
-    if (!is_hex(self.ch)) {
+    if (!isHex(self.ch)) {
         return Token{ .data = .{ .invalid = self.ch }, .start_loc = start_loc, .end_loc = self.cur_loc };
     }
-    while (is_hex(self.ch)) self.read_char();
+    while (isHex(self.ch)) self.readChar();
     const value = try std.fmt.parseInt(i64, self.string[start_pos..self.cur_pos], 0);
     return Token{ .data = .{ .integer = value }, .start_loc = start_loc, .end_loc = self.cur_loc };
 }
 
-fn read_variable_name(self: *Self) Error!Token {
+fn readVariableName(self: *Self) Error!Token {
     const start_loc = self.cur_loc;
     const start_pos = self.cur_pos;
 
-    self.read_char();
-    while (is_variable_name(self.ch)) self.read_char();
+    self.readChar();
+    while (isVariableName(self.ch)) self.readChar();
 
     if (std.mem.eql(u8, self.string[start_pos..self.cur_pos], "true")) {
         return Token{ .data = .true, .start_loc = start_loc, .end_loc = self.cur_loc };
@@ -260,46 +260,46 @@ fn read_variable_name(self: *Self) Error!Token {
     return Token{ .data = .{ .variable_name = self.string[start_pos..self.cur_pos] }, .start_loc = start_loc, .end_loc = self.cur_loc };
 }
 
-fn peek_char(self: *Self) u8 {
+fn peekChar(self: *Self) u8 {
     if (self.peek_pos >= self.string.len) {
         return 0;
     }
     return self.string[self.peek_pos];
 }
 
-fn skip_whitespace(self: *Self) void {
-    while (is_whitespace(self.ch)) self.read_char();
+fn skipWhitespace(self: *Self) void {
+    while (isWhitespace(self.ch)) self.readChar();
 }
 
 /// The lexer does not take care of escaped tokens in a string except for \", as that is required to be correctly handled
-fn read_string(self: *Self) Error!Token {
+fn readString(self: *Self) Error!Token {
     const start_loc = self.cur_loc;
     const start_pos = self.cur_pos;
 
     if (self.ch == '"') {
-        self.read_char();
+        self.readChar();
     }
     while (self.ch != '"') {
         switch (self.ch) {
             '\\' => {
-                if (self.peek_char() == '"') {
-                    self.read_char();
-                    self.read_char();
+                if (self.peekChar() == '"') {
+                    self.readChar();
+                    self.readChar();
                 } else {
-                    self.read_char();
+                    self.readChar();
                 }
             },
-            else => self.read_char(),
+            else => self.readChar(),
         }
     }
     const string = self.string[(start_pos + 1)..self.cur_pos];
-    self.read_char();
+    self.readChar();
 
     return Token{ .data = .{ .string = string }, .start_loc = start_loc, .end_loc = self.cur_loc };
 }
 
-pub fn next_token(self: *Self) Error!Token {
-    self.skip_whitespace();
+pub fn nextToken(self: *Self) Error!Token {
+    self.skipWhitespace();
     const empty_loc = Loc{ .col = 0, .row = 0, .pos = 0 };
     var new_token = switch (self.ch) {
         0 => return Token{ .data = .eof, .start_loc = self.cur_loc, .end_loc = self.cur_loc },
@@ -310,28 +310,28 @@ pub fn next_token(self: *Self) Error!Token {
         '[' => Token{ .data = .lbracket, .start_loc = self.cur_loc, .end_loc = empty_loc },
         ']' => Token{ .data = .rbracket, .start_loc = self.cur_loc, .end_loc = empty_loc },
         '0' => {
-            if (self.peek_char() == 'o') {
-                return try self.read_octal();
-            } else if (self.peek_char() == 'x') {
-                return try self.read_hex();
+            if (self.peekChar() == 'o') {
+                return try self.readOctal();
+            } else if (self.peekChar() == 'x') {
+                return try self.readHex();
             } else {
-                return try self.read_number();
+                return try self.readNumber();
             }
         },
 
         else => blk: {
-            if (is_dot(self.ch) or is_digit(self.ch)) {
-                return self.read_number();
-            } else if (is_first_variable_name_char(self.ch)) {
-                return self.read_variable_name();
+            if (isDot(self.ch) or isDigit(self.ch)) {
+                return self.readNumber();
+            } else if (isFirstVariableNameChar(self.ch)) {
+                return self.readVariableName();
             } else if (self.ch == '"') {
-                return self.read_string();
+                return self.readString();
             }
             break :blk Token{ .data = .{ .invalid = null }, .start_loc = self.cur_loc, .end_loc = empty_loc };
         },
     };
 
-    self.read_char();
+    self.readChar();
 
     new_token.end_loc = self.cur_loc;
 
