@@ -2,7 +2,7 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Alloc = std.mem.Allocator;
 
-const Loc = struct {
+pub const Loc = struct {
     col: u64,
     row: u64,
     pos: u64,
@@ -14,7 +14,7 @@ const Loc = struct {
     }
 };
 
-const TokenType = enum {
+pub const TokenType = enum {
     eof,
     invalid,
 
@@ -32,7 +32,7 @@ const TokenType = enum {
     variable_name,
 };
 
-const Token = struct {
+pub const Token = struct {
     /// Inclusive
     start_loc: Loc,
     /// Exclusive

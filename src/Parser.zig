@@ -1,6 +1,9 @@
 //! The Parser for ezc.
 
 const std = @import("std");
+const Lexer = @import("Lexer.zig");
+const Token = Lexer.Token;
+const TokenType = Lexer.TokenType;
 const ArrayList = std.ArrayList;
 const Alloc = std.mem.Allocator;
 
@@ -23,6 +26,25 @@ const Config = struct {
     allocator: Alloc,
 };
 
+const Error = error{};
+
 const Self = @This();
 
-pub fn parseConfig() void {}
+cur_token: Token,
+peek_token: Token,
+lexer: Lexer,
+
+pub fn init(lexer: Lexer) Self {
+    const cur_token = lexer.nextToken();
+    const peek_token = lexer.nextToken();
+
+    return Self{
+        .cur_token = cur_token,
+        .peek_token = peek_token,
+        .lexer = lexer,
+    };
+}
+
+pub fn parseConfig(self: *Self) Error!Config {
+    _ = self;
+}
