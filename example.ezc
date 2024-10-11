@@ -1,6 +1,12 @@
 integer = 3;
 integer2 = 0x33;
-string = "hello";
-array = [ "hello", "world" ]
-bool1 = true
-bool2 = false
+bool1 = true;
+bool2 = false;
+array = [ true, false, true ];
+test = "hi\n \t \r \\\u2800";
+
+- balls -
+stringarray = [ "deez", "balls", "nuts" ];
+
+- balls2 -
+stringarray = [ "deez", "balls", "nuts" ];

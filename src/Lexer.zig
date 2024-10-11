@@ -96,7 +96,7 @@ inline fn isDigit(ch: u8) bool {
     return '0' <= ch and ch <= '9';
 }
 
-inline fn isHex(ch: u8) bool {
+pub inline fn isHex(ch: u8) bool {
     return isDigit(ch) or ('a' <= ch and ch <= 'f') or ('A' <= ch and ch <= 'F');
 }
 
@@ -303,6 +303,7 @@ pub fn nextToken(self: *Self) Error!Token {
     const empty_loc = Loc{ .col = 0, .row = 0, .pos = 0 };
     var new_token = switch (self.ch) {
         0 => return Token{ .data = .eof, .start_loc = self.cur_loc, .end_loc = self.cur_loc },
+        // FIXME: Allow parsing of integers with signs.
         '-' => Token{ .data = .minus, .start_loc = self.cur_loc, .end_loc = empty_loc },
         ';' => Token{ .data = .semicolon, .start_loc = self.cur_loc, .end_loc = empty_loc },
         ',' => Token{ .data = .comma, .start_loc = self.cur_loc, .end_loc = empty_loc },

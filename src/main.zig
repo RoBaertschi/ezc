@@ -7,12 +7,9 @@ pub fn main() !void {
     const file = try std.fs.cwd().openFile("example.ezc", .{
         .mode = .read_only,
     });
-    var lexer = try ezc.Lexer.create(file, allocator);
-    var token = try lexer.nextToken();
-    while (token.data != .eof) {
-        std.debug.print("{any}\n", .{token});
-        token = try lexer.nextToken();
-    }
+    const lexer = try ezc.Lexer.create(file, allocator);
+    var parser = try ezc.Parser.create(lexer, allocator);
+    std.debug.print("{!}", .{parser.parseConfig()});
 }
 
 test "simple test" {
