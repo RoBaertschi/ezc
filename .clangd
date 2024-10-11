@@ -1,2 +1,0 @@
-CompileFlags:
-  Add: [-DEZC_IMPLEMENTATION, -pedantic, -Wall, -Wextra, -Werror, -std=c99, -xc]
