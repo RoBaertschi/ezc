@@ -121,8 +121,8 @@ inline fn isWhitespace(ch: u8) bool {
 }
 
 pub const Error = error{
-    invalid_hex_literal,
-    invalid_octal_literal,
+    InvalidHexLiteral,
+    InvalidOctalLiteral,
 } || Alloc.Error || std.fmt.ParseFloatError || std.fmt.ParseIntError;
 
 cur_loc: Loc,
@@ -173,6 +173,11 @@ fn readChar(self: *Self) void {
 }
 
 fn readNumber(self: *Self) Error!Token {
+    var sign: enum { plus, minus } = .plus;
+    if (self.ch == '-') {
+        sign = .minus;
+        self.readChar();
+    }
     const start_loc = self.cur_loc;
     const start_pos = self.cur_pos;
     var dot_type: enum { normal, begin, end } = .normal;
@@ -189,7 +194,7 @@ fn readNumber(self: *Self) Error!Token {
         }
         while (isDigit(self.ch)) self.readChar();
 
-        const value = switch (dot_type) {
+        var value = switch (dot_type) {
             .normal => try std.fmt.parseFloat(f64, self.string[start_pos..self.cur_pos]),
             .begin => blk: {
                 const fullFloat = try std.mem.concat(self.allocator, u8, &[_][]const u8{ @as([]const u8, "0"), self.string[start_pos..self.cur_pos] });
@@ -203,10 +208,17 @@ fn readNumber(self: *Self) Error!Token {
             },
         };
 
+        if (sign == .minus) {
+            value = -value;
+        }
+
         return Token{ .data = .{ .float = value }, .start_loc = start_loc, .end_loc = self.cur_loc };
     }
 
-    const value = try std.fmt.parseInt(i64, self.string[start_pos..self.cur_pos], 10);
+    var value = try std.fmt.parseInt(i64, self.string[start_pos..self.cur_pos], 10);
+    if (sign == .minus) {
+        value = -value;
+    }
     return Token{ .data = .{ .integer = value }, .start_loc = start_loc, .end_loc = self.cur_loc };
 }
 
@@ -303,8 +315,12 @@ pub fn nextToken(self: *Self) Error!Token {
     const empty_loc = Loc{ .col = 0, .row = 0, .pos = 0 };
     var new_token = switch (self.ch) {
         0 => return Token{ .data = .eof, .start_loc = self.cur_loc, .end_loc = self.cur_loc },
-        // FIXME: Allow parsing of integers with signs.
-        '-' => Token{ .data = .minus, .start_loc = self.cur_loc, .end_loc = empty_loc },
+        '-' => blk: {
+            if (isDigit(self.peekChar()) or isDot(self.peekChar())) {
+                return self.readNumber();
+            }
+            break :blk Token{ .data = .minus, .start_loc = self.cur_loc, .end_loc = empty_loc };
+        },
         ';' => Token{ .data = .semicolon, .start_loc = self.cur_loc, .end_loc = empty_loc },
         ',' => Token{ .data = .comma, .start_loc = self.cur_loc, .end_loc = empty_loc },
         '=' => Token{ .data = .equal, .start_loc = self.cur_loc, .end_loc = empty_loc },

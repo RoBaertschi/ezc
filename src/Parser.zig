@@ -249,6 +249,14 @@ fn parseValue(self: *Self) Error!Value {
             }
             return Value{ .array = list };
         },
+        .invalid => {
+            std.debug.print("invalid", .{});
+            if (self.cur_token.data.invalid) |c| {
+                std.debug.print("{c}", .{c});
+            }
+            std.debug.print("\n", .{});
+            return error.expected_value;
+        },
         else => return error.expected_value,
     };
     try self.nextToken();

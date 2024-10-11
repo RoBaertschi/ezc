@@ -1,9 +1,13 @@
 integer = 3;
 integer2 = 0x33;
+integer3 = -3;
 bool1 = true;
 bool2 = false;
 array = [ true, false, true ];
 test = "hi\n \t \r \\\u2800";
+float1 = -.1;
+float2 = -1.;
+float3 = -3.3;
 
 - balls -
 stringarray = [ "deez", "balls", "nuts" ];
