@@ -6,7 +6,7 @@ Version 0.1
 
 1. [Table of Contents](#table-of-contents)
 2. [Grammar](#grammar)
-   2. [EBNF](#ebnf)
+3. [EBNF](#ebnf)
 
 ## Grammar
 
