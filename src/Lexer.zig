@@ -156,6 +156,11 @@ pub fn create(file: std.fs.File, allocator: Alloc) (Alloc.Error || std.fs.File.R
     return self;
 }
 
+pub fn deinit(self: *Self) void {
+    self.allocator.free(self.string);
+    self.* = undefined;
+}
+
 fn readChar(self: *Self) void {
     if (self.peek_pos >= self.string.len) {
         self.ch = 0;

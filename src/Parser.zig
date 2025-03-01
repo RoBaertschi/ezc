@@ -32,6 +32,22 @@ const Value = union(enum) {
             .string => try writer.print("String: \"{s}\"", .{self.string}),
         }
     }
+
+    pub fn deinit(self: *Value, alloc: Alloc) void {
+        switch (self.*) {
+            .array => {
+                for (self.array.items) |*item| {
+                    item.deinit(alloc);
+                }
+                self.array.deinit();
+            },
+            .string => {
+                alloc.free(self.string);
+            },
+            else => {},
+        }
+        self.* = undefined;
+    }
 };
 
 const Variable = struct {
@@ -42,6 +58,12 @@ const Variable = struct {
         _ = options;
 
         try writer.print("{s} = ({})", .{ self.name, self.value });
+    }
+
+    pub fn deinit(self: *Variable, alloc: Alloc) void {
+        alloc.free(self.name);
+        self.value.deinit(alloc);
+        self.* = undefined;
     }
 };
 
@@ -57,6 +79,16 @@ const Category = struct {
             try writer.print("{}, ", .{item});
         }
     }
+
+    pub fn deinit(self: *Category, alloc: Alloc) void {
+        alloc.free(self.name);
+        for (self.values.items) |*item| {
+            item.deinit(alloc);
+        }
+
+        self.values.deinit();
+        self.* = undefined;
+    }
 };
 
 /// All the Memory that Config holds, is owend by Config. Parser will copy the Data from Lexer over to the final Config struct.
@@ -64,6 +96,21 @@ const Config = struct {
     categories: ArrayList(Category),
     no_category: ArrayList(Variable),
     allocator: Alloc,
+
+    pub fn deinit(self: *Config) void {
+        for (self.categories.items) |*item| {
+            item.deinit(self.allocator);
+        }
+
+        self.categories.deinit();
+
+        for (self.no_category.items) |*item| {
+            item.deinit(self.allocator);
+        }
+
+        self.no_category.deinit();
+        self.* = undefined;
+    }
 };
 
 const Error = error{
@@ -117,6 +164,7 @@ fn expectCur(self: *Self, tt: TokenType, err: Error) Error!void {
 
 fn parseCategoryRoot(self: *Self) Error!ArrayList(Variable) {
     var vars = ArrayList(Variable).init(self.allocator);
+    errdefer vars.deinit();
 
     while (true) {
         switch (self.cur_token.data) {
@@ -135,6 +183,7 @@ fn parseCategory(self: *Self) Error!Category {
     try self.nextToken();
     const temp_name = self.cur_token.data.variable_name;
     const var_name = try self.allocator.alloc(u8, temp_name.len);
+    errdefer self.allocator.free(var_name);
     // Ensure no bugs.
     std.debug.assert(var_name.len >= temp_name.len);
     std.mem.copyForwards(u8, var_name, self.cur_token.data.variable_name);
@@ -148,6 +197,7 @@ fn parseCategory(self: *Self) Error!Category {
 
 fn parseCategories(self: *Self) Error!ArrayList(Category) {
     var categories = ArrayList(Category).init(self.allocator);
+    errdefer categories.deinit();
     while (self.cur_token.data != .eof) {
         try categories.append(try self.parseCategory());
     }
@@ -156,6 +206,7 @@ fn parseCategories(self: *Self) Error!ArrayList(Category) {
 
 fn parseVariableAssign(self: *Self) Error!Variable {
     const var_name = try self.allocator.alloc(u8, self.cur_token.data.variable_name.len);
+    errdefer self.allocator.free(var_name);
     // Ensure no bugs.
     std.debug.assert(var_name.len >= self.cur_token.data.variable_name.len);
     std.mem.copyForwards(u8, var_name, self.cur_token.data.variable_name);
@@ -173,10 +224,12 @@ fn parseValue(self: *Self) Error!Value {
     const value = switch (self.cur_token.data) {
         .string => blk: {
             var buffer = ArrayList(u8).init(self.allocator);
+            defer buffer.deinit();
             var writer = buffer.writer();
 
             var state: enum { normal, backslash, unicode } = .normal;
             var unicode_buffer = ArrayList(u8).init(self.allocator);
+            defer unicode_buffer.deinit();
             for (self.cur_token.data.string) |c| {
                 switch (state) {
                     .normal => {
