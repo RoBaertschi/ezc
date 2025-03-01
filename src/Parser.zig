@@ -67,7 +67,7 @@ pub const Variable = struct {
     }
 };
 
-const Category = struct {
+pub const Category = struct {
     name: []const u8,
     values: ArrayList(Variable),
     pub fn format(self: Category, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
