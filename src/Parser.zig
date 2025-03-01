@@ -7,7 +7,7 @@ const TokenType = Lexer.TokenType;
 const ArrayList = std.ArrayList;
 const Alloc = std.mem.Allocator;
 
-const Value = union(enum) {
+pub const Value = union(enum) {
     boolean: bool,
     integer: i64,
     float: f64,
@@ -50,7 +50,7 @@ const Value = union(enum) {
     }
 };
 
-const Variable = struct {
+pub const Variable = struct {
     name: []const u8,
     value: Value,
     pub fn format(self: Variable, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -92,7 +92,7 @@ const Category = struct {
 };
 
 /// All the Memory that Config holds, is owend by Config. Parser will copy the Data from Lexer over to the final Config struct.
-const Config = struct {
+pub const Config = struct {
     categories: ArrayList(Category),
     no_category: ArrayList(Variable),
     allocator: Alloc,
@@ -113,7 +113,7 @@ const Config = struct {
     }
 };
 
-const Error = error{
+pub const Error = error{
     /// Requires a minus or a variable_name
     expected_statement,
     expected_assign_operator,
